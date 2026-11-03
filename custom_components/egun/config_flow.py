@@ -61,7 +61,7 @@ class EgunConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return await self.async_step_custom()
 
             preset_info = PRESETS.get(preset, PRESETS[PRESET_30_06])
-            title = f"eGun - {preset_info['name']}"
+            title = preset_info["name"]
             unique_id = f"egun_{preset_info['query']}_{preset_info['cat']}_{preset_info['shipto']}"
 
             await self.async_set_unique_id(unique_id)
@@ -121,7 +121,7 @@ class EgunConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(unique_id)
             self._abort_if_unique_id_configured()
 
-            title = f"eGun - {query}"
+            title = query
             notify_target = self._preset_data.get("notify_target", DEFAULT_NOTIFY_TARGET)
             max_price = self._preset_data.get(CONF_MAX_PRICE, DEFAULT_MAX_PRICE)
 

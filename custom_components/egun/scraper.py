@@ -228,201 +228,206 @@ class EgunScraper:
 
         # Select all item listing <li>
         for li in soup.select("ul.auction-list > li[data-auction-id]"):
-            aid = li.get("data-auction-id")
-            if not aid:
-                continue
+            try:
+                aid = li.get("data-auction-id")
+                if not aid:
+                    continue
 
-            title_el = li.select_one(".list-item__title-text")
-            title = title_el.get_text(strip=True) if title_el else ""
-            if not title:
-                continue
+                title_el = li.select_one(".list-item__title-text")
+                title = title_el.get_text(strip=True) if title_el else ""
+                if not title:
+                    continue
 
-            link_el = li.select_one("a.list-item__link")
-            href = link_el.get("href", "") if link_el else ""
-            item_url = f"{BASE_URL}{href}" if href.startswith("/") else (href or f"{BASE_URL}/item/{aid}")
+                link_el = li.select_one("a.list-item__link")
+                href = link_el.get("href", "") if link_el else ""
+                item_url = f"{BASE_URL}{href}" if href.startswith("/") else (href or f"{BASE_URL}/item/{aid}")
 
-            img_el = li.select_one(".list-item__thumb img")
-            img_src = img_el.get("src", "") if img_el else ""
-            image_url = f"{BASE_URL}{img_src}" if img_src.startswith("/") else img_src
+                img_el = li.select_one(".list-item__thumb img")
+                img_src = img_el.get("src", "") if img_el else ""
+                image_url = f"{BASE_URL}{img_src}" if img_src.startswith("/") else img_src
 
-            seller_el = li.select_one(".list-item__seller")
-            seller = seller_el.get_text(strip=True) if seller_el else "Inconnu"
+                seller_el = li.select_one(".list-item__seller")
+                seller = seller_el.get_text(strip=True) if seller_el else "Inconnu"
 
-            business_badge = li.select_one(".badge--business")
-            seller_type = (
-                "professionnel"
-                if (business_badge and "gewerblich" in business_badge.get_text().lower())
-                else "particulier"
-            )
-
-            cond_badge = li.select_one(".badge--condition")
-            cond_text = cond_badge.get_text().lower() if cond_badge else ""
-            condition = "neuf" if ("neu" in cond_text and "neuwertig" not in cond_text) else "occasion"
-
-            price_label_el = li.select_one(".list-item__price-label")
-            price_label = price_label_el.get_text(strip=True) if price_label_el else ""
-
-            price_el = li.select_one(".list-item__price")
-            price_raw = price_el.get_text(strip=True) if price_el else ""
-            price = clean_price(price_raw)
-            if price is None:
-                continue
-
-            # Check if exceeds max_price
-            if price > max_price:
-                continue
-
-            price_str = f"{price:.2f} €"
-
-            bids_el = li.select_one(".list-item__bids") or li.select_one(".list-item__price-sub")
-            bids_text = bids_el.get_text(strip=True) if bids_el else ""
-            bids_m = re.search(r"(\d+)\s*Gebot", bids_text)
-            bids_count = int(bids_m.group(1)) if bids_m else 0
-
-            is_auction = (
-                "gebot" in price_label.lower()
-                or "startpreis" in price_label.lower()
-                or bids_count > 0
-            )
-            is_buy_now = "sofortkauf" in price_label.lower()
-
-            ends_el = li.select_one(".list-item__ends")
-            ends_ts = int(ends_el.get("data-ends", 0)) if (ends_el and ends_el.get("data-ends")) else 0
-            remaining_seconds = max(0, ends_ts - now) if ends_ts > 0 else 0
-            remaining_time_str = format_remaining_time(remaining_seconds)
-
-            # Metadata enrichment
-            t_lower = title.lower()
-
-            # Accessory detection
-            is_acc = any(
-                w in t_lower
-                for w in [
-                    "magazin", "schaft", "verschlusskopf", "pufferpatrone", "dekopatrone",
-                    "montage", "lauf ", "waffenpflege", "reinigung", "putzzeug", "koffer",
-                    "futteral", "riemen", "patronenbox", "holster", "schalldämpfer "
-                ]
-            ) and not any(
-                w in t_lower
-                for w in [
-                    "repetierbüchse", "büchse", "repetierer", "gewehr", "stutzen", "karabiner"
-                ]
-            )
-            if any(w in t_lower for w in ["waffenpflege", "reinigung", "pufferpatrone", "dekopatrone", "magazinboden"]):
-                is_acc = True
-
-            if exclude_accessories and is_acc:
-                continue
-
-            # Straight-pull vs bolt-action
-            is_linear = any(
-                w in t_lower
-                for w in [
-                    "geradezug", "linear", "helix", "maral", "brx1", "r93", "r8",
-                    "impulse", "sr30", "sr 30", "steel action", "strasser", "rols"
-                ]
-            )
-            action_type = "lineaire" if is_linear else "verrou"
-
-            # Brand detection
-            brand = "Autre"
-            known_brands = [
-                ("Heym", ["heym", "sr20", "sr21", "sr30"]),
-                ("Merkel", ["merkel", "rx helix", "helix", "kr1"]),
-                ("Blaser", ["blaser", "r93", "r8"]),
-                ("Sauer", ["sauer", "s100", "s101", "s202", "s404", "s80", "s90"]),
-                ("Browning", ["browning", "x-bolt", "a-bolt", "maral"]),
-                ("Tikka", ["tikka", "t3", "t3x", "m55", "m65"]),
-                ("Sako", ["sako", "s20", "sako 85", "sako 75", "finnbear"]),
-                ("Beretta", ["beretta", "brx1"]),
-                ("CZ", ["cz ", "cz5", "cz6", "ceska", "brünner", "brno"]),
-                ("Mauser", ["mauser", "m12", "m18", "m98", "system 98"]),
-                ("Remington", ["remington", "model 700", "mod. 700", "783"]),
-                ("Winchester", ["winchester", "xpr", "model 70"]),
-                ("Steyr", ["steyr", "mannlicher", "steyr-mannlicher"]),
-                ("Ruger", ["ruger", "american rifle", "m77"]),
-                ("Bergara", ["bergara", "b14"]),
-                ("Haenel", ["haenel", "jaeger 10"]),
-                ("Zastava", ["zastava", "m70", "m98"]),
-                ("Krico", ["krico"]),
-                ("Voere", ["voere"]),
-                ("BSA", ["bsa"]),
-                ("Savage", ["savage", "axis", "110", "impulse"]),
-                ("Renato Baldi", ["baldi", "renato baldi"]),
-            ]
-            for b_name, triggers in known_brands:
-                if any(tr in t_lower for tr in triggers):
-                    brand = b_name
-                    break
-
-            # Optic detection
-            has_optic = False
-            optic_name = None
-            optic_keywords = [
-                ("Zeiss", ["zeiss"]),
-                ("Swarovski", ["swarovski"]),
-                ("Schmidt & Bender", ["schmidt & bender", "schmidt und bender", "s&b"]),
-                ("Kahles", ["kahles"]),
-                ("Meopta", ["meopta"]),
-                ("Steiner", ["steiner"]),
-                ("Kaps", ["kaps"]),
-                ("Leupold", ["leupold"]),
-                ("Minox", ["minox"]),
-                ("Vortex", ["vortex"]),
-                ("Burris", ["burris"]),
-                ("Docter", ["docter"]),
-                ("Aimpoint", ["aimpoint"]),
-                ("Nikko Stirling", ["nikko", "stirling"]),
-                ("Sutter", ["sutter"]),
-                ("Optique / ZF", ["zf", "zielfernrohr", "optik", "rotpunkt", "point rouge"]),
-            ]
-            for opt_name, triggers in optic_keywords:
-                if any(tr in t_lower for tr in triggers):
-                    has_optic = True
-                    optic_name = opt_name
-                    break
-
-            # Thread / silencer
-            is_threaded = any(
-                w in t_lower
-                for w in ["gewinde", "mündungsgewinde", "m14", "m15", "m18", "14x1", "15x1", "fileté", "filetage"]
-            )
-            has_silencer = any(w in t_lower for w in ["schalldämpfer", "sd", "silencieux", "modérateur"])
-            if has_silencer:
-                is_threaded = True
-
-            # Stainless / Left-handed
-            is_stainless = any(w in t_lower for w in ["edelstahl", "stainless", "inox"])
-            is_left_handed = any(w in t_lower for w in ["links", "linkshänder", "linkssystem", "gauch"])
-
-            items.append(
-                EgunItem(
-                    id=aid,
-                    title=title,
-                    url=item_url,
-                    image_url=image_url,
-                    price=price,
-                    price_str=price_str,
-                    price_label=price_label,
-                    is_auction=is_auction,
-                    is_buy_now=is_buy_now,
-                    bids_count=bids_count,
-                    ends_timestamp=ends_ts,
-                    remaining_seconds=remaining_seconds,
-                    remaining_time_str=remaining_time_str,
-                    seller=seller,
-                    seller_type=seller_type,
-                    condition=condition,
-                    is_accessory=is_acc,
-                    action_type=action_type,
-                    brand=brand,
-                    has_optic=has_optic,
-                    optic_name=optic_name,
-                    is_threaded=is_threaded,
-                    has_silencer=has_silencer,
-                    is_stainless=is_stainless,
-                    is_left_handed=is_left_handed,
+                business_badge = li.select_one(".badge--business")
+                seller_type = (
+                    "professionnel"
+                    if (business_badge and "gewerblich" in business_badge.get_text().lower())
+                    else "particulier"
                 )
-            )
+
+                cond_badge = li.select_one(".badge--condition")
+                cond_text = cond_badge.get_text().lower() if cond_badge else ""
+                condition = "neuf" if ("neu" in cond_text and "neuwertig" not in cond_text) else "occasion"
+
+                price_label_el = li.select_one(".list-item__price-label")
+                price_label = price_label_el.get_text(strip=True) if price_label_el else ""
+
+                price_el = li.select_one(".list-item__price")
+                price_raw = price_el.get_text(strip=True) if price_el else ""
+                price = clean_price(price_raw)
+                if price is None:
+                    continue
+
+                # Check if exceeds max_price
+                if price > max_price:
+                    continue
+
+                price_str = f"{price:.2f} €"
+
+                bids_el = li.select_one(".list-item__bids") or li.select_one(".list-item__price-sub")
+                bids_text = bids_el.get_text(strip=True) if bids_el else ""
+                bids_m = re.search(r"(\d+)\s*Gebot", bids_text)
+                bids_count = int(bids_m.group(1)) if bids_m else 0
+
+                is_auction = (
+                    "gebot" in price_label.lower()
+                    or "startpreis" in price_label.lower()
+                    or bids_count > 0
+                )
+                is_buy_now = "sofortkauf" in price_label.lower()
+
+                ends_el = li.select_one(".list-item__ends")
+                ends_ts = int(ends_el.get("data-ends", 0)) if (ends_el and ends_el.get("data-ends")) else 0
+                remaining_seconds = max(0, ends_ts - now) if ends_ts > 0 else 0
+                remaining_time_str = format_remaining_time(remaining_seconds)
+
+                # Metadata enrichment
+                t_lower = title.lower()
+
+                # Accessory detection
+                is_acc = any(
+                    w in t_lower
+                    for w in [
+                        "magazin", "schaft", "verschlusskopf", "pufferpatrone", "dekopatrone",
+                        "montage", "lauf ", "waffenpflege", "reinigung", "putzzeug", "koffer",
+                        "futteral", "riemen", "patronenbox", "holster", "schalldämpfer "
+                    ]
+                ) and not any(
+                    w in t_lower
+                    for w in [
+                        "repetierbüchse", "büchse", "repetierer", "gewehr", "stutzen", "karabiner"
+                    ]
+                )
+                if any(w in t_lower for w in ["waffenpflege", "reinigung", "pufferpatrone", "dekopatrone", "magazinboden"]):
+                    is_acc = True
+
+                if exclude_accessories and is_acc:
+                    continue
+
+                # Straight-pull vs bolt-action
+                is_linear = any(
+                    w in t_lower
+                    for w in [
+                        "geradezug", "linear", "helix", "maral", "brx1", "r93", "r8",
+                        "impulse", "sr30", "sr 30", "steel action", "strasser", "rols"
+                    ]
+                )
+                action_type = "lineaire" if is_linear else "verrou"
+
+                # Brand detection
+                brand = "Autre"
+                known_brands = [
+                    ("Heym", ["heym", "sr20", "sr21", "sr30"]),
+                    ("Merkel", ["merkel", "rx helix", "helix", "kr1"]),
+                    ("Blaser", ["blaser", "r93", "r8"]),
+                    ("Sauer", ["sauer", "s100", "s101", "s202", "s404", "s80", "s90"]),
+                    ("Browning", ["browning", "x-bolt", "a-bolt", "maral"]),
+                    ("Tikka", ["tikka", "t3", "t3x", "m55", "m65"]),
+                    ("Sako", ["sako", "s20", "sako 85", "sako 75", "finnbear"]),
+                    ("Beretta", ["beretta", "brx1"]),
+                    ("CZ", ["cz ", "cz5", "cz6", "ceska", "brünner", "brno"]),
+                    ("Mauser", ["mauser", "m12", "m18", "m98", "system 98"]),
+                    ("Remington", ["remington", "model 700", "mod. 700", "783"]),
+                    ("Winchester", ["winchester", "xpr", "model 70"]),
+                    ("Steyr", ["steyr", "mannlicher", "steyr-mannlicher"]),
+                    ("Ruger", ["ruger", "american rifle", "m77"]),
+                    ("Bergara", ["bergara", "b14"]),
+                    ("Haenel", ["haenel", "jaeger 10"]),
+                    ("Zastava", ["zastava", "m70", "m98"]),
+                    ("Krico", ["krico"]),
+                    ("Voere", ["voere"]),
+                    ("BSA", ["bsa"]),
+                    ("Savage", ["savage", "axis", "110", "impulse"]),
+                    ("Renato Baldi", ["baldi", "renato baldi"]),
+                ]
+                for b_name, triggers in known_brands:
+                    if any(tr in t_lower for tr in triggers):
+                        brand = b_name
+                        break
+
+                # Optic detection
+                has_optic = False
+                optic_name = None
+                optic_keywords = [
+                    ("Zeiss", ["zeiss"]),
+                    ("Swarovski", ["swarovski"]),
+                    ("Schmidt & Bender", ["schmidt & bender", "schmidt und bender", "s&b"]),
+                    ("Kahles", ["kahles"]),
+                    ("Meopta", ["meopta"]),
+                    ("Steiner", ["steiner"]),
+                    ("Kaps", ["kaps"]),
+                    ("Leupold", ["leupold"]),
+                    ("Minox", ["minox"]),
+                    ("Vortex", ["vortex"]),
+                    ("Burris", ["burris"]),
+                    ("Docter", ["docter"]),
+                    ("Aimpoint", ["aimpoint"]),
+                    ("Nikko Stirling", ["nikko", "stirling"]),
+                    ("Sutter", ["sutter"]),
+                    ("Optique / ZF", ["zf", "zielfernrohr", "optik", "rotpunkt", "point rouge"]),
+                ]
+                for opt_name, triggers in optic_keywords:
+                    if any(tr in t_lower for tr in triggers):
+                        has_optic = True
+                        optic_name = opt_name
+                        break
+
+                # Thread / silencer
+                is_threaded = any(
+                    w in t_lower
+                    for w in ["gewinde", "mündungsgewinde", "m14", "m15", "m18", "14x1", "15x1", "fileté", "filetage"]
+                )
+                has_silencer = any(w in t_lower for w in ["schalldämpfer", "sd", "silencieux", "modérateur"])
+                if has_silencer:
+                    is_threaded = True
+
+                # Stainless / Left-handed
+                is_stainless = any(w in t_lower for w in ["edelstahl", "stainless", "inox"])
+                is_left_handed = any(w in t_lower for w in ["links", "linkshänder", "linkssystem", "gauch"])
+
+                items.append(
+                    EgunItem(
+                        id=aid,
+                        title=title,
+                        url=item_url,
+                        image_url=image_url,
+                        price=price,
+                        price_str=price_str,
+                        price_label=price_label,
+                        is_auction=is_auction,
+                        is_buy_now=is_buy_now,
+                        bids_count=bids_count,
+                        ends_timestamp=ends_ts,
+                        remaining_seconds=remaining_seconds,
+                        remaining_time_str=remaining_time_str,
+                        seller=seller,
+                        seller_type=seller_type,
+                        condition=condition,
+                        is_accessory=is_acc,
+                        action_type=action_type,
+                        brand=brand,
+                        has_optic=has_optic,
+                        optic_name=optic_name,
+                        is_threaded=is_threaded,
+                        has_silencer=has_silencer,
+                        is_stainless=is_stainless,
+                        is_left_handed=is_left_handed,
+                    )
+                )
+
+            except Exception as item_err:
+                _LOGGER.debug("Failed to parse eGun item element: %s", item_err)
+                continue
 
         return items
