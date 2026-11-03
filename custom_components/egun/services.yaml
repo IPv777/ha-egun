@@ -1,0 +1,71 @@
+refresh:
+  name: Actualiser les flux
+  description: Déclenche un scraping immédiat de la recherche eGun.
+  fields:
+    entry_id:
+      name: ID du flux
+      description: ID de l'entrée eGun à actualiser (toutes si omis).
+      example: "01J9...XYZ"
+      selector:
+        config_entry:
+          integration: egun
+
+set_budget:
+  name: Modifier le budget
+  description: Ajuste le plafond de prix maximal recherché sur eGun.
+  fields:
+    max_price:
+      name: Prix maximum
+      description: Plafond en euros (ex 600.0).
+      required: true
+      example: 600
+      selector:
+        number:
+          min: 50
+          max: 10000
+          step: 50
+          unit_of_measurement: "EUR"
+          mode: box
+    entry_id:
+      name: ID du flux
+      description: ID de l'entrée concernée (toutes si omis).
+      example: "01J9...XYZ"
+      selector:
+        config_entry:
+          integration: egun
+
+mute_item:
+  name: Masquer une annonce
+  description: Ignore une annonce pour ne plus recevoir de notifications à son sujet.
+  fields:
+    item_id:
+      name: ID de l'annonce
+      description: Identifiant eGun de l'objet (ex 20509313).
+      required: true
+      example: "20509313"
+      selector:
+        text:
+
+unmute_item:
+  name: Réactiver une annonce
+  description: Réintègre une annonce masquée dans les notifications.
+  fields:
+    item_id:
+      name: ID de l'annonce
+      description: Identifiant eGun de l'objet.
+      required: true
+      example: "20509313"
+      selector:
+        text:
+
+reset_cache:
+  name: Réinitialiser le cache
+  description: Vide la mémoire des annonces déjà vues et alertées pour repartir à zéro.
+  fields:
+    entry_id:
+      name: ID du flux
+      description: ID de l'entrée concernée (toutes si omis).
+      example: "01J9...XYZ"
+      selector:
+        config_entry:
+          integration: egun

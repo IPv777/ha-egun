@@ -1,0 +1,71 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "eGun Setup",
+        "description": "Choose a preset search to monitor rifles on eGun.de or enter custom search parameters.",
+        "data": {
+          "feed_preset": "Caliber / Preset Category",
+          "max_price": "Maximum budget (€)",
+          "notify_target": "Notification service (e.g. notify.mobile_app_thinkphone_by_motorola)",
+          "exclude_accessories": "Exclude strict accessories (magazines, stocks...)"
+        }
+      },
+      "custom": {
+        "title": "Custom eGun Search",
+        "description": "Specify exact search parameters.",
+        "data": {
+          "query": "Search keywords (e.g. 30 06, 308, blaser)",
+          "cat": "eGun category ID (72 = Repetierbüchsen)",
+          "shipto": "Shipping destination code (8 = France, eu = Europe)",
+          "ewb": "EWB status (x = all, 1 = with EWB)",
+          "exclude_accessories": "Exclude accessories"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This eGun search is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "eGun Options",
+        "description": "Adjust feed options.",
+        "data": {
+          "max_price": "Maximum budget (€)",
+          "scan_interval": "Polling interval (minutes)",
+          "notify_targets": "Notification services (comma separated)",
+          "exclude_accessories": "Exclude strict accessories"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_annonces": {
+        "name": "Total listings"
+      },
+      "encheres_actives": {
+        "name": "Active auctions"
+      },
+      "prochaine_fin_d_enchere": {
+        "name": "Next auction closing"
+      },
+      "derniere_annonce": {
+        "name": "Latest listing"
+      },
+      "prix_minimum": {
+        "name": "Minimum price"
+      },
+      "carabines_equipees": {
+        "name": "Equipped rifles"
+      }
+    },
+    "binary_sensor": {
+      "alerte_fin_imminente": {
+        "name": "Imminent auction alert"
+      }
+    }
+  }
+}

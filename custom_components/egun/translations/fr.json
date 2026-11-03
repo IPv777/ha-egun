@@ -1,0 +1,71 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configuration d'eGun",
+        "description": "Choisissez un flux prédéfini pour surveiller les carabines sur eGun.de ou saisissez des paramètres sur-mesure.",
+        "data": {
+          "feed_preset": "Catégorie / Calibre recherché",
+          "max_price": "Budget maximal (€)",
+          "notify_target": "Service de notification (ex: notify.mobile_app_thinkphone_by_motorola)",
+          "exclude_accessories": "Exclure les accessoires stricts (chargeurs seuls, crosses...)"
+        }
+      },
+      "custom": {
+        "title": "Recherche eGun personnalisée",
+        "description": "Indiquez les paramètres précis de la requête.",
+        "data": {
+          "query": "Mots-clés de recherche (ex: 30 06, 308, blaser)",
+          "cat": "ID de catégorie eGun (72 = Repetierbüchsen)",
+          "shipto": "Code pays de livraison (8 = France, eu = Europe)",
+          "ewb": "Régime EWB (x = tout, 1 = avec EWB)",
+          "exclude_accessories": "Exclure les accessoires"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Cette recherche eGun est déjà configurée dans Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options eGun",
+        "description": "Ajustez les réglages du flux.",
+        "data": {
+          "max_price": "Budget maximal (€)",
+          "scan_interval": "Intervalle d'actualisation (minutes)",
+          "notify_targets": "Services de notification (séparés par des virgules)",
+          "exclude_accessories": "Exclure les accessoires stricts"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_annonces": {
+        "name": "Total annonces"
+      },
+      "encheres_actives": {
+        "name": "Enchères actives"
+      },
+      "prochaine_fin_d_enchere": {
+        "name": "Prochaine fin d'enchère"
+      },
+      "derniere_annonce": {
+        "name": "Dernière annonce"
+      },
+      "prix_minimum": {
+        "name": "Prix minimum"
+      },
+      "carabines_equipees": {
+        "name": "Carabines équipées"
+      }
+    },
+    "binary_sensor": {
+      "alerte_fin_imminente": {
+        "name": "Alerte fin imminente"
+      }
+    }
+  }
+}
