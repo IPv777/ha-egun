@@ -227,7 +227,6 @@ class EgunLowestPriceSensor(EgunBaseSensor):
     _attr_icon = "mdi:tag-outline"
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_native_unit_of_measurement = "EUR"
-    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator: EgunCoordinator, entry: ConfigEntry) -> None:
         """Initialize sensor."""
