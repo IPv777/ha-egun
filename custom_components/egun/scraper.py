@@ -81,6 +81,7 @@ class EgunItem:
     has_silencer: bool
     is_stainless: bool
     is_left_handed: bool
+    buy_now_price: float | None = None
     first_seen: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict[str, Any]:
@@ -111,6 +112,7 @@ class EgunItem:
             "has_silencer": self.has_silencer,
             "is_stainless": self.is_stainless,
             "is_left_handed": self.is_left_handed,
+            "buy_now_price": self.buy_now_price,
             "first_seen": self.first_seen,
         }
 
@@ -124,6 +126,7 @@ class EgunItem:
             "price": self.price,
             "price_str": self.price_str,
             "is_auction": self.is_auction,
+            "buy_now_price": self.buy_now_price,
             "remaining_time": self.remaining_time_str,
             "remaining_seconds": self.remaining_seconds,
             "bids_count": self.bids_count,
@@ -287,6 +290,11 @@ class EgunScraper:
                 )
                 is_buy_now = "sofortkauf" in price_label.lower()
 
+                buynow_el = li.select_one(".list-item__buynow")
+                buynow_price = clean_price(buynow_el.get_text(strip=True)) if buynow_el else None
+                if buynow_price is None and is_buy_now:
+                    buynow_price = price
+
                 # Filter unreached reserve prices (Mindestpreis nicht erreicht)
                 li_text = li.get_text(" ", strip=True).lower()
                 if "mindestpreis" in li_text and ("nicht erreicht" in li_text or "vorhanden" in li_text):
@@ -429,6 +437,7 @@ class EgunScraper:
                         has_silencer=has_silencer,
                         is_stainless=is_stainless,
                         is_left_handed=is_left_handed,
+                        buy_now_price=buynow_price,
                     )
                 )
 
