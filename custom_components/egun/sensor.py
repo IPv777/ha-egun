@@ -67,7 +67,7 @@ class EgunBaseSensor(CoordinatorEntity[EgunCoordinator], SensorEntity):
 class EgunTotalItemsSensor(EgunBaseSensor):
     """Sensor reporting total number of items found under budget."""
 
-    _attr_icon = "mdi:rifle"
+    _attr_icon = "mdi:crosshairs-gps"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "annonces"
 
