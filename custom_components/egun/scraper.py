@@ -287,6 +287,12 @@ class EgunScraper:
                 )
                 is_buy_now = "sofortkauf" in price_label.lower()
 
+                # Filter unreached reserve prices (Mindestpreis nicht erreicht)
+                li_text = li.get_text(" ", strip=True).lower()
+                if "mindestpreis" in li_text and ("nicht erreicht" in li_text or "vorhanden" in li_text):
+                    if not is_buy_now or price > max_price:
+                        continue
+
                 ends_el = li.select_one(".list-item__ends")
                 ends_ts = int(ends_el.get("data-ends", 0)) if (ends_el and ends_el.get("data-ends")) else 0
                 remaining_seconds = max(0, ends_ts - now) if ends_ts > 0 else 0
