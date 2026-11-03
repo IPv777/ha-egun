@@ -95,7 +95,7 @@ class EgunConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             {"value": PRESET_308, "label": "Carabines 308 (Calibre .308 Win)"},
                             {"value": PRESET_CUSTOM, "label": "Recherche personnalisée"},
                         ],
-                        mode=selector.SelectMode.DROPDOWN,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
                 vol.Required(CONF_MAX_PRICE, default=DEFAULT_MAX_PRICE): vol.Coerce(float),
